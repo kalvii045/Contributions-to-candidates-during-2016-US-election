@@ -1,0 +1,451 @@
+---
+title: "Contributions for candidates in California"
+output: html_document
+---
+
+## Introduction 
+This is a report that analyzes a dataset of the US elections in California. The data set containts approximately 16339957 variables, however for the analysis in this report I loaded approximately 50,000 variables so the data is easier to work with. I also tested the data in different ways to see if the patterns are accurate in the shrunk data and found that ratios in both sizes are always similar. For example, no matter the size of the data Sanders, Bernard always has the highest frequency in the state followed by other candidates (always in the same order), contbr_occupations and contbr_cities are always in the same order as well in frequency.  
+
+I chose this data set because I am interested in politics especially this year's election. I chose California because that is a popular state and I wanted to analyze and find patterns in this data set and see what factors influenced peoples decision. 
+
+Graph number of votes per candidate. Bernie Sanders is the most frequent candidate in California, followed by Hilary Clinton. Donald Trump has low votes in California by contrast, this makes sense Donald Trump did not win in California. Let's explore the data further by contributors career and city of residence. 
+
+## Univariate Plots
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(grDevices)
+library(gridExtra)
+
+cali_elections <- read.csv('california.csv',
+                           row.names=NULL,nrows=50000)[,0:-1]
+cali_elections$cmte_id<-read.csv('california.csv',
+                                 row.names=NULL,nrows=50000)[,c('cmte_id')]
+cali_elections$ID <- seq.int(nrow(cali_elections))
+
+## Number of votes per candidate
+ggplot(aes(x=cand_nm),data=cali_elections) + 
+  geom_histogram(stat='count',binwidth = 0.5) + 
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+## Add formatted date so it's easier to work with in R
+strDates <- cali_elections$contb_receipt_dt
+cali_elections$dates_formatted <- as.Date(strDates,"%d-%b-%y")
+
+
+```
+
+
+Next I wanted to see the most popular careers. There are about 26,000 different contributor occupations, it would be too messy to see all of them. So I chose the top 10 occupations, that is choose the top 10 most common occupations. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Get an idea of the most popular careers and their count
+head(summary(cali_elections$contbr_occupation),n=10)
+
+
+##Select the top 10 careers
+all_careers <- subset(cali_elections, 
+                      cali_elections$contbr_occupation == 'RETIRED' | 
+              cali_elections$contbr_occupation == 'NOT EMPLOYED' | 
+              cali_elections$contbr_occupation == 'INFORMATION REQUESTED'| 
+                cali_elections$contbr_occupation == 'TEACHER'| 
+  cali_elections$contbr_occupation == 'ATTORNEY'| 
+  cali_elections$contbr_occupation == 'PHYSICIAN'| 
+    cali_elections$contbr_occupation == 'CONSULTANT'| 
+    cali_elections$contbr_occupation == 'ENGINEER'| 
+    cali_elections$contbr_occupation == 'HOMEMAKER'| 
+cali_elections$contbr_occupation == 'SOFTWARE ENGINEER' | 
+  cali_elections$contbr_occupation == 'BUSINESS OWNER')
+
+## Graph the top 10 careers
+ggplot(aes(x=contbr_occupation),data=all_careers) + 
+  geom_histogram(stat='count') +
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+```
+
+
+The most occupations seem to be "Retired" and "Not employed". Other popular careers include attorney,engieer and teacher.In the coming plots I will see if there is a relation between occupation and the candidate they chose.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Get an idea of the most popular contributors and their count
+head(summary(cali_elections$contbr_nm),n=10)
+
+
+##Select the top 10 careers
+all_contributors <- subset(cali_elections, 
+ cali_elections$contbr_nm == 'BHOOMA, PRAMOD MR.' | 
+cali_elections$contbr_nm == 'PENDERGAST, JAN'| 
+          cali_elections$contbr_nm  == 'BENTON, JOYCE LI'| 
+  cali_elections$contbr_nm  == 'SPEAR, JOSEPH'| 
+  cali_elections$contbr_nm  == 'LAMPTON, TANA'| 
+    cali_elections$contbr_nm  == 'RAMIREZ, DIEGO'| 
+    cali_elections$contbr_nm  == 'LINGARDO, RUDY'| 
+    cali_elections$contbr_nm  == 'SVENSSON, ANDERS MR.'| 
+cali_elections$contbr_nm  == 'LEMASTER, SHARI' | 
+  cali_elections$contbr_nm  == 'LOOMIS, STEVEN')
+
+## Graph the top 10 most occuring contributors
+ggplot(aes(x=contbr_nm),data=all_contributors) + 
+  geom_histogram(stat='count') +
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  ggtitle("Most occuring contributors")
+
+## Get more info about the most frequent contributor
+look <- subset(all_contributors,
+               all_contributors$contbr_nm == 'BHOOMA, PRAMOD MR.')
+
+sum(look$contb_receipt_amt)
+
+
+```
+
+The graph above shows the most frequent top ten contributors and how many different contributions they made. The most frequent occuring contributor is Bhooma, Pramod Mr followed by Pendergast, Jan. Bhoom, Pramod Mr is an enginner from San Jose, CA who made all his contributions towards Paul Rand, a total of approximately $2150.00.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+with(cali_elections,summary(contb_receipt_amt))
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+## Select the top 10 cities
+head(summary(cali_elections$contbr_city),n=10)
+
+all_cities <- subset(cali_elections, cali_elections$contbr_city == 
+                       'LOS ANGELES' | 
+                       cali_elections$contbr_city == 'SAN FRANCISCO' | 
+cali_elections$contbr_city == 'SAN DIEGO' |
+cali_elections$contbr_city == 'OAKLAND' |
+cali_elections$contbr_city == 'SAN JOSE' |
+cali_elections$contbr_city == 'SACRAMENTO' |
+cali_elections$contbr_city == 'PALO ALTO' |
+cali_elections$contbr_city == 'LONG BEACH' |
+cali_elections$contbr_city == 'SANTA MONICA' |
+cali_elections$contbr_city == 'BERKELEY')
+
+## Graph the top 10 cities
+ggplot(aes(x=contbr_city),data=all_cities) + 
+  geom_histogram(stat='count') +
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+```
+
+## Univariate Analysis 
+
+What is the structure of your dataset?\
+This dataset contains personal information about a contributor and the candidate they chose. Common variables in this dataset include candidate name, contributor city, contributor occupation, contributor receipt amount, form_tp. I will analyze these variables in multiple ways to see if there is a relation between them. So far I have gotten a rough estimate/prediction of the counts and most popular occuring factors in the variables. Apart from contributor receipt amount this dataset is not "number based" so a lot of the predictions will be using "count" or most popular factors e.g. as we saw I found the most popular cities and occupations to work with. 
+
+What is/are the main feature(s) of interest in your dataset?\
+I put most emphasis on the contributor_receipt_amount, contributor city and contributor occupation variables for the following reasons: I want to see if there is a relation between candidates and the contributor receipt amount so I wanted to get a general sense/idea of the distribution of the data. In the coming plots I will use bivariate techniques to see if there is relation with contributor_receipt_amount and other variables. 
+Contributor occupation is also important because an individuals career can greatly influence the candidate they choose. And last but not least region is important as well, this is why all states have different winning candidates, I want to look deeper and see if it varies from city to city.
+
+What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?\
+I will look further into the form_tp variable to see if it has a relation to the chosen candidate, or form_tp mixed with other variables can influence decisions. I will also do further research to see if "outside" factors can influence chosen candidate, for example I saw that Bernie Sanders has high number of supporters in California. Why is that he wins major votes in this state?
+
+Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?\
+I first looked at the count of each important variables like contributor occupation and contributor city and then plotted the top 10 cities. I chose the top 10 cities because there are thousands of cities and occupations and it would be too messy to work with all of them so I felt top 10 is a good number to show accurate results. For the contributor receipt amount I first plotted a regular scatter plot but it was a very dense graph so I did a log transformation to get a closer look at the distribution of the data. 
+
+## Bivariate Plots 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Graph top careers by candidate  
+ggplot(aes(x=cand_nm,fill=contbr_occupation),data=all_careers) + 
+  geom_histogram(stat='count') + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  ggtitle("Number of contributions in top 10 careers") +
+  xlab("Candidate name") + 
+  ylab("Number of contributions") + 
+  scale_fill_discrete(name='Contributor occupation')
+
+```
+
+There does seem to be support for Bernie Sanders and Hilary Clinton throughout all occupations espcially in "Retired" and "Not Employed". There is also a lot of support for Hilary Clinton in the retired section. This might be because Democrats have a more "socialist" approach towards running a country, which is beneficial for retired people. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Plot year by contb_receipt_amt
+ggplot(aes(x=dates_formatted,y=contb_receipt_amt),data=cali_elections) + 
+  geom_jitter(alpha=1/25)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Find max donation amount
+look_amt <- cali_elections %>%
+  group_by(contbr_nm) %>%
+  summarise(sum_amt = sum(contb_receipt_amt)) %>%
+  ungroup() %>%
+  arrange(sum_amt)
+
+## Find contributors with the highest amounts
+look_amt <- look_amt[order(-look_amt$sum_amt),]
+
+## Find top 10
+look_amt <- head(look_amt,n=10)
+look_amt
+
+## Plot highest paying contributors 
+ggplot(aes(x=sum_amt),data=look_amt) + 
+  geom_histogram(aes(fill=contbr_nm)) + 
+  ggtitle("Highest paying contributors (sum of all contributions")
+
+## Find interesting facts about top contributor
+david <- subset(cali_elections,contbr_nm == 'HOROWITZ, DAVID')
+
+```
+
+The graph above looks into the top ten highest contributing individuals. The highest contributor is David Horowitz from Laguna Niguel a president/ceo of Horowitz Group and Horowitz Management Inc. He made a total contribution of $16200. He made most of his contributions towards Scott Walker, and one for Ted Cruz and John R Kasich. 
+
+Next I will analyze relations between cities and chosen candidates. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+## Graph city residence by chosen candidate 
+ggplot(aes(x=cand_nm,fill=contbr_city),data=all_cities) + 
+  geom_histogram(stat='count') + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  ggtitle("Number of contributions in top 10 cities")
+
+
+## Graph city residence by chosen candidate proportions 
+ggplot(aes(x=cand_nm,y=..count../sum(..count..)),data=all_cities) + 
+  geom_histogram(stat='count') + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  facet_wrap(~all_cities$contbr_city) + 
+  ylab("Proportion")
+
+
+```
+
+Interestingly using facet_wrap() I created a graph for each city and the number of votes per candidate and found each graph to be bimodal. Each graph has two peaks one around Hilary Clinton and one around Bernie Sanders. The first histogram also shows another view/perspective of the top receivers in the top ten cities. We see that Bernie and Hilary occupy most space.  
+
+Next I'm going to look at any trends and patterns in contb_receipt_amt. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+## Compute boxplot
+ggplot(aes(x=cand_nm,y=contb_receipt_amt),data=cali_elections) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+
+## Log transformation of boxplot 
+ggplot(aes(x=cand_nm,y=contb_receipt_amt),data=cali_elections) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  scale_y_log10() + 
+  ggtitle("Log transformation")
+
+
+## Graph mean receipt amount of each candidate
+plot1 <- ggplot(aes(x=cand_nm,y=contb_receipt_amt),data=cali_elections) + 
+  geom_boxplot(alpha=1/25) +  
+  theme(axis.text.x=element_text(angle=90,hjust=1)) + 
+  stat_summary(fun.y = "mean", colour = "red", size = 2, geom = "point") + 
+  ggtitle("Data with mean") + scale_y_log10()
+  
+
+## Graph median receipt amount of each candidate
+plot2 <- ggplot(aes(x=cand_nm,y=contb_receipt_amt),data=cali_elections) + 
+  geom_boxplot(alpha=1/25) + 
+  theme(axis.text.x=element_text(angle=90,hjust=1)) + 
+  stat_summary(fun.y = "median", colour = "red", size = 2, geom = "point") + 
+  ggtitle("Data with median")  + scale_y_log10()
+
+final_plot <- grid.arrange(plot1,plot2,ncol=2)
+
+by(cali_elections$contb_receipt_amt,cali_elections$cand_nm,summary)
+```
+
+Most of the dots lie somewhere around 0. Candidates that had low support (everyone except Bernie Sanders and Hilary Clinton) have a lot more negative amounts that candidates with support. For example, looking at the first plot Bernie Sanders seems to have no negative receipt amounts. Candidates with more support however seem to have a smaller interquartile range. 
+
+Contributor receipt amounts by occupation and city 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Plot contributor receipt amount by contributor occupation 
+ggplot(aes(x=contbr_occupation,y=contb_receipt_amt),data=all_careers) +  
+  geom_boxplot(alpha=1/10) + 
+   theme(axis.text.x=element_text(angle=90,hjust=1))
+
+## Log transformation 
+ggplot(aes(x=contbr_occupation,y=contb_receipt_amt),data=all_careers) +  
+  geom_boxplot(alpha=1/10) + 
+   theme(axis.text.x=element_text(angle=90,hjust=1)) + 
+  scale_y_log10() + ggtitle("Log transformation of previous graph")
+
+##Plot contributor receipt amount by contributor city 
+ggplot(aes(x=contbr_city,y=contb_receipt_amt),data=all_cities) + 
+  geom_boxplot(alpha=1/10) + 
+  theme(axis.text.x=element_text(angle=90,hjust=1))
+
+## Log transformation
+ggplot(aes(x=contbr_city,y=contb_receipt_amt),data=all_cities) + 
+  geom_boxplot(alpha=1/10) + 
+  theme(axis.text.x=element_text(angle=90,hjust=1)) + 
+  scale_y_log10() + ggtitle("Log transformation of previous graph")
+
+```
+
+Not surprisingly retired people seem to have more negative receipt amounts than other occupations. It "realistically" makes sense because retired people are likely to have less income. However there also may be external factors to this such as winning candidate because we can see "not employed" have almost no negative amounts. Negative amounts seem to be common in all cities. The first of the two plots use top 10 careers by receipt amount and the second one uses top 10 cities by receipt amount.  
+
+## Bivariate Analysis 
+
+How did the feature(s) of interest vary with other features in \
+the dataset?\
+
+Candidates with more support had fewer or no negative amounts, however this does not seem to affect the average or the median of the receipt amounts. We see that losing candidates have much higher averages than Bernie Sanders or Hilary Clinton, this could be due to external factors such as income of the contributor, or how much they care about the election. Furthermore, I saw that throughout all cities Hilary Clinton and Bernie Sanders had the highest number of votes. 
+
+What was the strongest relationship you found?\
+Surprisingly in the occupation vs candidate section the support for Bernie Sanders was unusally high for not employed compared to other occupations. And the plot shows that both Bernie Sanders and Hilary Clinton had very high support for retired people as well. Negative amounts of contributor receipts are also common throughout all cities especially big ones such as Los Angeles. And also last but not least, retired people have a high number of negative receipt amounts whereas not employed had almost none. This suggests the relationship between winning candidate and positive receipt amount is stronger than occupation versus receipt amount. 
+
+
+The next section explores three variables. It plots the number of candidates voted in each city and by each occupation shown in different colors.  Here I create a new variable called "ID" to give each row a unique identifier and then merge all rows with the top 10 cities and top 10 careers with the same ID. This is to make sure I'm using the same person for the plot. If I try to extract from two different tables the results won't be accurate. So I merged the tables so I can select the people from the top ten cities and top 10 careers in the sample. 
+
+## Multivariate plots 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+## Merge all_cities and all_careers by id 
+new_variants <- merge(all_cities,all_careers,by="ID")
+
+## Group by candidate,city and occupation
+new_cities <- new_variants %>% 
+  group_by(cand_nm.x,contbr_occupation.x,contbr_city.x)%>%
+  summarise(n=n())%>%
+  ungroup()%>%
+  arrange(cand_nm.x)
+
+## Plot candidate by city colored by occupation 
+ggplot(aes(x=contbr_city.x,fill=contbr_occupation.x), data=new_cities)+ 
+  geom_histogram(stat='count') + 
+  theme(axis.text.x = element_text(angle=90,hjust=1))+ 
+  facet_wrap(~ cand_nm.x) + 
+  scale_color_brewer(type = 'div') + ylab("Count")
+
+```
+
+Most of the plots are covered with not employed, physician, retired and software engineers. Once again we see retired people from all cities voting for Bernie Sanders and Hilary Clinton. It also seems like Software Engineers had a lot of support for Hilary Clinton and Bernie Sanders as well. Most of Donald Trump's supporters seem to be physicians and retired people from all cities. 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+## Plot occupation by receipt amount by candidate
+ggplot(aes(x=contb_receipt_amt,y=contbr_occupation),data=all_careers) + 
+  geom_bin2d(aes(fill=cand_nm)) + 
+   theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+As we mentioned earlier receipt amount is more likely to be positive based on the candidate than the occupation of the contributor. People of the same occupation made positive contributions to some candidates while "negative" to others.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Break down into Bernie Sanders and Hilary Clinton from top 10 cities
+breakdown<- subset(all_cities, all_cities$cand_nm == 'Sanders, Bernard' | 
+  all_cities$cand_nm == 'Clinton, Hillary Rodham')
+
+ggplot(aes(x=contb_receipt_amt,y=contbr_city),data=breakdown) + 
+  geom_bin2d(aes(fill=cand_nm)) + 
+  theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+The plot above shows receipt amounts from the top ten cities for Hilary Clinton and Bernie Sanders. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Break down into Bernie Sanders and Hilary Clinton from top 10 careers
+breakdown_careers<- subset(all_careers, 
+                           all_careers$cand_nm == 'Sanders, Bernard' |
+                          all_careers$cand_nm == 'Clinton, Hillary Rodham')
+
+ggplot(aes(x=contb_receipt_amt,y=contbr_occupation),
+       data=breakdown_careers) + 
+  geom_bin2d(aes(fill=cand_nm)) + 
+  theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+The plot above shows the contributor receipt amount per candidate from the top 10 occupations. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+## Plot city by receipt amount by candidate
+ggplot(aes(x=contb_receipt_amt,y=contbr_city),data=all_cities) + 
+  geom_bin2d(aes(fill=cand_nm)) + 
+theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+We can also see most or all cities in California are for the same candidates. Contributions don't vary from city to city but rather from candidate to canditate. 
+
+## Multivariate Analysis 
+
+Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?\ 
+
+We can definitely assume from this dataset that occupation had not nothing or much to do with the contributions people made towards candidates. We see in the first plot of this section there are different occupations scattered across all candidates.Most of the dots lie in Bernie Sanders' and Hilary Clinton's box. Next we see that people of the same occupations made contributions to only certain candidates and not others. And then we saw people across all cities made contributions to mostly the two candidates. 
+
+Were there any interesting or surprising interactions between features?
+
+While there wasn't a direct relationship between occupation and candidate they chose, there was a slight relationship between occupation and contribution amount. We see that "upper income" careers such as software engineers, physicians and attorneys have less negative contributions regardless of candidates. There are some negatives among those occupations however such as in Rubio, Marco's and Ted Cruz's case. 
+
+## Summary and Final plots 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x=cand_nm,y=contbr_occupation),data=all_careers) + 
+  geom_bin2d() +
+  theme(axis.text.x=element_text(angle=90,hjust=1)) + 
+  scale_fill_gradient(trans='log10') + 
+  ggtitle("Number of contributions in top 10 careers") +
+  xlab("Candidate name") + 
+  ylab("Occupation")
+  
+```
+
+#### Description One 
+
+\
+
+This is another version of the first plot in the bivariate section. It looks into how many contributions each candidate got from each group of occuapation. This graph reveals a lot about occupation, as in occupation did not have much to do with whom they contributed to. There does seem to be some exception to this in the "Retired" and "Not employed" section, most retired people seems to have donated for Hilary Clinton while most "not employed" for Bernie Sanders.  
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x=cand_nm,y=contb_receipt_amt),data=cali_elections) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) + 
+  scale_y_log10() + 
+  xlab("Candidate name") + 
+  ylab("Contributor receipt amount (USD)") + 
+  ggtitle("Interquartile ranges of receipt amount per candidate") 
+```
+
+#### Description Two
+
+\
+
+This is a log transformation of the boxplot for contributor receipt amount for each candidate. A bivariate plot, this graph shows the interquatile ranges for each candidate and we can get a close look at the boxes and get an idea of the IQR for each candidate.We see that popular candidates such as Bernie Sanders had lower IQR ranges than losing candidates such as Rubio,Marco. So we know that there are external factors such as income of contributor that affected how much donation was made to the candidate. Bernie Sander's IQR ranges approximately between 50 and 100,  Rubio Marco's around 100 to 5000. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(aes(x=cand_nm,y=contbr_city),data=all_cities) + 
+  stat_bin2d() + 
+  theme(axis.text.x = element_text(angle=90,hjust=1)) +  
+  xlab("Candidate name") + 
+  ylab("City") + 
+  ggtitle("Number of contributions in top 10 cities") +
+  scale_fill_gradient(trans='log10')
+```
+
+#### Description Three \
+
+This is another version of the second plot in the bivariate plots. The last point shows how many contributions each candidate got from each city. This plot is important because it shows regions within the state did not really have an effect on the candidate they contributed to. We see that Hilary Clinton and Bernie Sanders always have the tallest bars.We also see that people from all cities contributed towards them, some colors are longer than others such as Los Angeles but thats because there are more people from certain cities in the data set. We still see different cities throughout all candidates. It eliminates bias and creates a better and clear understanding of the data.
+
+
+## Reflection \
+
+This was a very interesting dataset to explore especially because I am someone interested in American politics. I learned quite a lot from this dataset such as biases in society about occupations (certain occupations will vote for one over another) which we saw was not necessarily true. I also saw that city does not have much of a factor in California as well. 
+
+Analyzing this dataset brought some challenges. For example loading the data from csv into R studio caused some trouble, the reader would skip the entire first column and place the following columns under the wrong header name. This can cause serious error when analyzing the data. However, I handled the problem using Stack Overflow, used the error messages and see if other people had similar problems. I then fixed the data, by loading the variable it wasnt loading properly separately on another line of code. Another challenge I faced was deciding which variables to analyze. I focused on occupation, city and candidate name because those three were "unique" for everyone or they were "independent" variables that had varied from person to person. Two people with the same career could have different receipt amounts and thats somehing interesting to look at. A lot of the variables in this dataset were just identifiers such as file_num, tran_id, election_tp, cand_id and cmte_id were all variables that was always the same for each different candidate, they were in other words similar to a "ID" for each candidate. 
+
+However, once I got into the analysis of the data I found myself moving through it quite fast and quickly. The data caused almost no error during processing, the data made sense and was easy to work with. I also used mathematical models such as mean, median and log transformations and interquartile ranges to get a better grasp of the data. Luckily the data was clean so these transformations caused no problems and was easy to understand. 
+
+In the future, I think I can enhance my analysis once I learn more about statistics and data science. I can also improve the analysis of the report with a better understanding of what negative contributions mean throughout the data. There are many negative values in the data yet no explanation of what they mean. I included negative amounts in the data because excluding them may cut out important parts related to the data e.g. we saw that retired people had more negative amounts than others. In my opinion, it is important to look at the data from all aspects and understand it's structure from every value.  
